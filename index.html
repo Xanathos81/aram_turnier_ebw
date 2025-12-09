@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Turnierverwaltung 32 Spieler</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1, h2 {
+      margin-bottom: 10px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    label {
+      display: inline-block;
+      min-width: 120px;
+      margin-bottom: 5px;
+    }
+    select, input, textarea {
+      min-width: 220px;
+      padding: 4px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+    button {
+      padding: 4px 8px;
+      cursor: pointer;
+      margin: 2px 0;
+    }
+    .warning {
+      color: #b30000;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .success {
+      color: #006600;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .flex {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .flex > div {
+      flex: 1 1 300px;
+    }
+    .small {
+      font-size: 0.8rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Turnierverwaltung – 32 Spieler / 2 Gruppen</h1>
+
+<div class="section">
+  <h2>Match-Eingabe</h2>
+  <p class="small">
+    Schritt 1: Spieler wählen → Schritt 2: Match wählen → Schritt 3: Champion & Ergebnis setzen.
+  </p>
+  <div>
+    <label for="playerSelect">Spieler:</label>
+    <select id="playerSelect"></select>
+  </div>
+  <div>
+    <label for="matchSelect">Match:</label>
+    <select id="matchSelect">
+      <option value="">Bitte zuerst Spieler wählen</option>
+    </select>
+  </div>
+  <div>
+    <label for="champSelect">Champion:</label>
+    <select id="champSelect">
+      <option value="">Bitte wählen</option>
+    </select>
+  </div>
+  <div>
+    <label for="resultSelect">Ergebnis:</label>
+    <select id="resultSelect">
+      <option value="">Bitte wählen</option>
+      <option value="win">Win</option>
+      <option value="lose">Lose</option>
+    </select>
+  </div>
+  <button id="saveBtn">Speichern</button>
+  <div id="message"></div>
+</div>
+
+<div class="section">
+  <h2>Alle Matches (Übersicht)</h2>
+  <div id="matchesTableContainer"></div>
+</div>
+
+<div class="section">
+  <h2>Gruppen-Standings</h2>
+  <div class="flex">
+    <div>
+      <h3>Gruppe 1 (gerade Spieler)</h3>
+      <div id="standings1"></div>
+    </div>
+    <div>
+      <h3>Gruppe 2 (ungerade Spieler)</h3>
+      <div id="standings2"></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Daten-Export / Import</h2>
+  <button id="exportBtn">Daten als JSON exportieren</button><br><br>
+  <label for="importInput">JSON importieren:</label><br>
+  <textarea id="importInput" rows="5" cols="80"></textarea><br>
+  <button id="importBtn">Import ausführen</button>
+  <div id="importMessage"></div>
+</div>
+
+<script>
+  // === SPIELER-LISTE: HIER KANNST DU DIE NAMEN ANPASSEN ===
+  // Gruppe 1 = gerade Spieler, Gruppe 2 = ungerade Spieler
+  const players = [
+    { id: 1,  name: 'Spieler 1',  group: '2' },
+    { id: 2,  name: 'Spieler 2',  group: '1' },
+    { id: 3,  name: 'Spieler 3',  group: '2' },
+    { id: 4,  name: 'Spieler 4',  group: '1' },
+    { id: 5,  name: 'Spieler 5',  group: '2' },
+    { id: 6,  name: 'Spieler 6',  group: '1' },
+    { id: 7,  name: 'Spieler 7',  group: '2' },
+    { id: 8,  name: 'Spieler 8',  group: '1' },
+    { id: 9,  name: 'Spieler 9',  group: '2' },
+    { id: 10, name: 'Spieler 10', group: '1' },
+    { id: 11, name: 'Spieler 11', group: '2' },
+    { id: 12, name: 'Spieler 12', group: '1' },
+    { id: 13, name: 'Spieler 13', group: '2' },
+    { id: 14, name: 'Spieler 14', group: '1' },
+    { id: 15, name: 'Spieler 15', group: '2' },
+    { id: 16, name: 'Spieler 16', group: '1' },
+    { id: 17, name: 'Spieler 17', group: '2' },
+    { id: 18, name: 'Spieler 18', group: '1' },
+    { id: 19, name: 'Spieler 19', group: '2' },
+    { id: 20, name: 'Spieler 20', group: '1' },
+    { id: 21, name: 'Spieler 21', group: '2' },
+    { id: 22, name: 'Spieler 22', group: '1' },
+    { id: 23, name: 'Spieler 23', group: '2' },
+    { id: 24, name: 'Spieler 24', group: '1' },
+    { id: 25, name: 'Spieler 25', group: '2' },
+    { id: 26, name: 'Spieler 26', group: '1' },
+    { id: 27, name: 'Spieler 27', group: '2' },
+    { id: 28, name: 'Spieler 28', group: '1' },
+    { id: 29, name: 'Spieler 29', group: '2' },
+    { id: 30, name: 'Spieler 30', group: '1' },
+    { id: 31, name: 'Spieler 31', group: '2' },
+    { id: 32, name: 'Spieler 32', group: '1' }
+  ];
+
+  function getPlayerById(id) {
+    return players.find(p => p.id === id);
+  }
+
+  // === MATCHES GENERIEREN (Round Robin pro Gruppe) ===
+  const matches = [];
+  let matchIdCounter = 1;
+
+  function addRoundRobinForGroup(playerIds, groupLabel) {
+    for (let i = 0; i < playerIds.length; i++) {
+      for (let j = i + 1; j < playerIds.length; j++) {
+        const p1 = playerIds[i];
+        const p2 = playerIds[j];
+        matches.push({
+          id: matchIdCounter++,
+          group: groupLabel,
+          p1: p1,
+          p2: p2,
+          p1Champion: null,
+          p2Champion: null,
+          winner: null
+        });
+      }
+    }
+  }
+
+  const group1Players = players.filter(p => p.group === '1').map(p => p.id); // gerade
+  const group2Players = players.filter(p => p.group === '2').map(p => p.id); // ungerade
+
+  addRoundRobinForGroup(group1Players, '1');
+  addRoundRobinForGroup(group2Players, '2');
+
+  // === CHAMPION-LISTE ===
+  const champions = [
+    'Aatrox','Ahri','Akali','Akshan','Alistar','Ambessa','Amumu','Anivia','Annie','Aphelios',
+    'Ashe','Aurelion Sol','Aurora','Azir','Barde','Bel’Veth','Blitzcrank','Brand','Braum','Briar',
+    'Caitlyn','Camille','Cassiopeia','Cho’Gath','Corki','Darius','Diana','Dr. Mundo','Draven','Ekko',
+    'Elise','Evelynn','Ezreal','Fiddlesticks','Fiora','Fizz','Galio','Gangplank','Garen','Gnar',
+    'Gragas','Graves','Gwen','Hecarim','Heimerdinger','Hwei','Illaoi','Irelia','Ivern','Janna',
+    'Jarvan IV','Jax','Jayce','Jhin','Jinx','K’Sante','Kai’Sa','Kalista','Karma','Karthus',
+    'Kassadin','Katarina','Kayle','Kayn','Kennen','Kha’Zix','Kindred','Kled','Kog’Maw','LeBlanc',
+    'Lee Sin','Leona','Lillia','Lissandra','Lucian','Lulu','Lux','Malphite','Malzahar','Maokai',
+    'Master Yi','Mel','Milio','Miss Fortune','Mordekaiser','Morgana','Naafiri','Nami','Nasus','Nautilus',
+    'Neeko','Nidalee','Nilah','Nocturne','Nunu & Willump','Olaf','Orianna','Ornn','Pantheon','Poppy',
+    'Pyke','Qiyana','Quinn','Rakan','Rammus','Rek’Sai','Rell','Renata Glasc','Renekton','Rengar',
+    'Riven','Rumble','Ryze','Samira','Sejuani','Senna','Seraphine','Sett','Shaco','Shen',
+    'Shyvana','Singed','Sion','Sivir','Skarner','Smolder','Sona','Soraka','Swain','Sylas',
+    'Syndra','Tahm Kench','Taliyah','Talon','Taric','Teemo','Thresh','Tristana','Trundle','Tryndamere',
+    'Twisted Fate','Twitch','Udyr','Urgot','Varus','Vayne','Veigar','Vel’Koz','Vex','Vi',
+    'Viego','Viktor','Vladimir','Volibear','Warwick','Wukong','Xayah','Xerath','Xin Zhao','Yasuo',
+    'Yone','Yorick','Yuumi','Zaahen','Zac','Zed','Zeri','Ziggs','Zilean','Zoe','Zyra'
+  ];
+
+  // === STORAGE ===
+  const STORAGE_KEY = 'turnier_state_v4';
+
+  function saveState() {
+    const state = { matches: matches };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const state = JSON.parse(raw);
+      if (!state.matches) return;
+      state.matches.forEach(stored => {
+        const local = matches.find(m => m.id === stored.id);
+        if (local) {
+          local.p1Champion = stored.p1Champion || null;
+          local.p2Champion = stored.p2Champion || null;
+          local.winner = stored.winner || null;
+        }
+      });
+    } catch (e) {
+      console.error('Fehler beim Laden des Zustands', e);
+    }
+  }
+
+  // === HILFSFUNKTIONEN ===
+  function getMatchesForPlayer(playerId) {
+    return matches.filter(m => m.p1 === playerId || m.p2 === playerId);
+  }
+
+  function getChampionsUsedByPlayer(playerId, excludeMatchId = null) {
+    const used = [];
+    matches.forEach(m => {
+      if (excludeMatchId && m.id === excludeMatchId) return;
+      if (m.p1 === playerId && m.p1Champion) used.push(m.p1Champion);
+      if (m.p2 === playerId && m.p2Champion) used.push(m.p2Champion);
+    });
+    return used;
+  }
+
+  function getResultForPlayer(m, playerId) {
+    if (!m.winner) return '';
+    if (m.winner === playerId) return 'win';
+    const opponentId = (m.p1 === playerId) ? m.p2 : m.p1;
+    if (m.winner === opponentId) return 'lose';
+    return '';
+  }
+
+  function setMessage(text, isError = false) {
+    const el = document.getElementById('message');
+    el.textContent = text;
+    el.className = isError ? 'warning' : 'success';
+  }
+
+  function setImportMessage(text, isError = false) {
+    const el = document.getElementById('importMessage');
+    el.textContent = text;
+    el.className = isError ? 'warning' : 'success';
+  }
+
+  // === UI-ELEMENTE ===
+  const playerSelect   = document.getElementById('playerSelect');
+  const matchSelect    = document.getElementById('matchSelect');
+  const champSelect    = document.getElementById('champSelect');
+  const resultSelect   = document.getElementById('resultSelect');
+  const saveBtn        = document.getElementById('saveBtn');
+  const matchesTableContainer = document.getElementById('matchesTableContainer');
+  const standings1     = document.getElementById('standings1');
+  const standings2     = document.getElementById('standings2');
+  const exportBtn      = document.getElementById('exportBtn');
+  const importBtn      = document.getElementById('importBtn');
+  const importInput    = document.getElementById('importInput');
+
+  // === UI: Spieler-Auswahl ===
+  function initPlayerSelect() {
+    playerSelect.innerHTML = '';
+    players.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.name} (Gruppe ${p.group})`;
+      playerSelect.appendChild(opt);
+    });
+  }
+
+  // === UI: Champion-Dropdown ===
+  function initChampSelect() {
+    champSelect.innerHTML = '';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Bitte wählen';
+    champSelect.appendChild(defaultOpt);
+
+    champions.forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch;
+      opt.textContent = ch;
+      champSelect.appendChild(opt);
+    });
+  }
+
+  // === UI: Match-Dropdown für gewählten Spieler ===
+  function refreshMatchSelect() {
+    const playerId = parseInt(playerSelect.value, 10);
+    matchSelect.innerHTML = '';
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'Match wählen...';
+    matchSelect.appendChild(defaultOpt);
+
+    const list = getMatchesForPlayer(playerId);
+    list.forEach(m => {
+      const isP1 = (m.p1 === playerId);
+      const opponentId = isP1 ? m.p2 : m.p1;
+      const opponent = getPlayerById(opponentId);
+      const label = `Match ${m.id} – Gruppe ${m.group} – vs ${opponent ? opponent.name : ''}`;
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = label;
+      matchSelect.appendChild(opt);
+    });
+  }
+
+  // Match-Daten laden (vorhandene Einträge anzeigen)
+  function loadSelectedMatchData() {
+    const playerId = parseInt(playerSelect.value, 10);
+    const matchId = parseInt(matchSelect.value, 10);
+    const match = matches.find(m => m.id === matchId);
+
+    champSelect.value = '';
+    resultSelect.value = '';
+
+    if (!match) return;
+
+    const isP1 = (match.p1 === playerId);
+    const champ = isP1 ? match.p1Champion : match.p2Champion;
+    const result = getResultForPlayer(match, playerId);
+
+    if (champ) champSelect.value = champ;
+    if (result) resultSelect.value = result;
+  }
+
+  // === Matches-Tabelle (Admin) ===
+  function renderMatchesTable() {
+    let html = '<table><thead><tr>' +
+      '<th>ID</th><th>Gruppe</th>' +
+      '<th>Spieler 1</th><th>Champ 1</th>' +
+      '<th>Spieler 2</th><th>Champ 2</th>' +
+      '<th>Sieger</th>' +
+      '</tr></thead><tbody>';
+
+    matches.forEach(m => {
+      const p1 = getPlayerById(m.p1);
+      const p2 = getPlayerById(m.p2);
+      const winner = m.winner ? getPlayerById(m.winner) : null;
+      html += '<tr>' +
+        `<td>${m.id}</td>` +
+        `<td>${m.group}</td>` +
+        `<td>${p1 ? p1.name : ''}</td>` +
+        `<td>${m.p1Champion || ''}</td>` +
+        `<td>${p2 ? p2.name : ''}</td>` +
+        `<td>${m.p2Champion || ''}</td>` +
+        `<td>${winner ? winner.name : ''}</td>` +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    matchesTableContainer.innerHTML = html;
+  }
+
+  // === Standings ===
+  function computeStandings() {
+    const stats = {};
+    players.forEach(p => {
+      stats[p.id] = {
+        player: p,
+        wins: 0,
+        losses: 0,
+        games: 0,
+        points: 0
+      };
+    });
+
+    matches.forEach(m => {
+      if (!m.winner) return;
+      const s1 = stats[m.p1];
+      const s2 = stats[m.p2];
+      s1.games++;
+      s2.games++;
+
+      if (m.winner === m.p1) {
+        s1.wins++;
+        s1.points++;
+        s2.losses++;
+      } else if (m.winner === m.p2) {
+        s2.wins++;
+        s2.points++;
+        s1.losses++;
+      }
+    });
+
+    function renderGroup(groupLabel) {
+      const groupStats = Object.values(stats)
+        .filter(s => s.player.group === groupLabel)
+        .sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return a.player.id - b.player.id;
+        });
+
+      let html = '<table><thead><tr>' +
+        '<th>Platz</th><th>Spieler</th><th>Spiele</th><th>Siege</th><th>Niederlagen</th><th>Punkte</th>' +
+        '</tr></thead><tbody>';
+
+      groupStats.forEach((s, index) => {
+        html += '<tr>' +
+          `<td>${index + 1}</td>` +
+          `<td>${s.player.name}</td>` +
+          `<td>${s.games}</td>` +
+          `<td>${s.wins}</td>` +
+          `<td>${s.losses}</td>` +
+          `<td>${s.points}</td>` +
+          '</tr>';
+      });
+
+      html += '</tbody></table>';
+      return html;
+    }
+
+    standings1.innerHTML = renderGroup('1');
+    standings2.innerHTML = renderGroup('2');
+  }
+
+  // === SPEICHERN ===
+  function saveCurrentMatch() {
+    const playerId = parseInt(playerSelect.value, 10);
+    const matchId  = parseInt(matchSelect.value, 10);
+    const champ    = champSelect.value;
+    const result   = resultSelect.value;
+
+    if (!playerId || !matchId || !champ || !result) {
+      setMessage('Bitte Spieler, Match, Champion und Ergebnis auswählen.', true);
+      return;
+    }
+
+    const match = matches.find(m => m.id === matchId);
+    if (!match) {
+      setMessage('Match nicht gefunden.', true);
+      return;
+    }
+
+    if (!champions.includes(champ)) {
+      setMessage('Champion nicht im Pool. Bitte exakt einen vorhandenen Namen verwenden.', true);
+      return;
+    }
+
+    // Duplikatprüfung
+    const usedElsewhere = getChampionsUsedByPlayer(playerId, matchId);
+    if (usedElsewhere.includes(champ)) {
+      setMessage('Dieser Champion wurde von diesem Spieler bereits in einem anderen Match verwendet.', true);
+      return;
+    }
+
+    const isP1 = (match.p1 === playerId);
+    const opponentId = isP1 ? match.p2 : match.p1;
+
+    if (isP1) {
+      match.p1Champion = champ;
+    } else {
+      match.p2Champion = champ;
+    }
+
+    if (result === 'win') {
+      match.winner = playerId;
+    } else if (result === 'lose') {
+      match.winner = opponentId;
+    }
+
+    saveState();
+    renderMatchesTable();
+    computeStandings();
+    setMessage('Match gespeichert.', false);
+  }
+
+  // === EXPORT / IMPORT ===
+  exportBtn.addEventListener('click', () => {
+    const state = { matches: matches };
+    const json = JSON.stringify(state, null, 2);
+    prompt('JSON kopieren:', json);
+  });
+
+  importBtn.addEventListener('click', () => {
+    const json = importInput.value.trim();
+    if (!json) {
+      setImportMessage('Kein JSON zum Import vorhanden.', true);
+      return;
+    }
+    try {
+      const state = JSON.parse(json);
+      if (!state.matches) {
+        setImportMessage('Ungültiges JSON-Format.', true);
+        return;
+      }
+      state.matches.forEach(stored => {
+        const local = matches.find(m => m.id === stored.id);
+        if (local) {
+          local.p1Champion = stored.p1Champion || null;
+          local.p2Champion = stored.p2Champion || null;
+          local.winner = stored.winner || null;
+        }
+      });
+      saveState();
+      renderMatchesTable();
+      computeStandings();
+      setImportMessage('Daten importiert.', false);
+    } catch (e) {
+      console.error(e);
+      setImportMessage('Fehler beim Import des JSON.', true);
+    }
+  });
+
+  // === INIT ===
+  loadState();
+  initPlayerSelect();
+  initChampSelect();
+  refreshMatchSelect();
+  renderMatchesTable();
+  computeStandings();
+
+  playerSelect.addEventListener('change', () => {
+    setMessage('', false);
+    refreshMatchSelect();
+    champSelect.value = '';
+    resultSelect.value = '';
+  });
+
+  matchSelect.addEventListener('change', () => {
+    setMessage('', false);
+    loadSelectedMatchData();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    saveCurrentMatch();
+  });
+</script>
+
+</body>
+</html>
